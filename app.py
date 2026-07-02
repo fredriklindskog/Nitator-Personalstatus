@@ -3,11 +3,11 @@ import hashlib
 import datetime
 import sqlite3
 import os
+import time
 
 # 1. Inställningar för hemsidan (Bred layout för TV-skärm)
 st.set_page_config(page_title="Veckostatus Personal", layout="wide")
 
-# NYTT: Stabil CSS inbäddad via st.markdown för att styla tabellen och varannan rad
 st.markdown("""
 <style>
     .status-tabell {
@@ -26,7 +26,6 @@ st.markdown("""
         vertical-align: top;
         font-size: 1rem;
     }
-    /* Skugga varannan rad ljusgrå */
     .status-tabell tr:nth-child(even) {
         background-color: #f4f6f7 !important;
     }
@@ -55,7 +54,7 @@ def initiera_databas():
         )
     ''')
     cursor.execute("SELECT COUNT(*) FROM veckostatus")
-    if cursor.fetchone()[0] == 0:
+    if cursor.fetchone() == 0:
         for namn in ANSTALLDA:
             for dag in VECKODAGAR:
                 cursor.execute(
@@ -92,7 +91,7 @@ def uppdatera_status_i_db(namn, dag, ny_status, ny_kommentar):
 # 3. Kalkylera datum och vecka
 idag = datetime.date.today()
 iso_info = idag.isocalendar()
-veckonummer = iso_info[1]
+veckonummer = iso_info
 
 mandag = idag - datetime.timedelta(days=idag.weekday())
 VECKODAGAR = ["Måndag", "Tisdag", "Onsdag", "Torsdag", "Fredag"]
@@ -122,10 +121,8 @@ ANSTALLDA_MED_LOSENORD = {
     "Stefan Christensson": kryptera_losenord("Stefan2026")
 }
 
-# Skapa en ren lista med bara namnen för rullistan
 ANSTALLDA = list(ANSTALLDA_MED_LOSENORD.keys())
 
-# Starta databasen
 initiera_databas()
 
 # --- SEPARATA FLIKAR HÖGST UPP PÅ SIDAN ---
@@ -143,19 +140,14 @@ with flik_tv:
 
     aktuell_data = hämta_alla_statusar()
 
-    # NYTT: Vi bygger hela tabellen i ren HTML för total kontroll över skuggningen
     html_kod = "<table class='status-tabell'>"
-    
-    # 1. Bygg rubrikraden
     html_kod += "<tr><th>👤 Anställd</th>"
     for dag_text in DAG_MED_DATUM:
         html_kod += f"<th>{dag_text}</th>"
     html_kod += "</tr>"
     
-    # 2. Bygg personalraderna
     for namn in ANSTALLDA:
         html_kod += f"<tr><td><strong>{namn}</strong></td>"
-        
         for dag in VECKODAGAR:
             dag_data = aktuell_data[namn][dag]
             status_text = STATUS_VAL.get(dag_data["status"], "🟢 På jobb")
@@ -166,12 +158,9 @@ with flik_tv:
             if kommentar_text.strip():
                 html_kod += f"<div class='kommentar-text'>💬 {kommentar_text}</div>"
             html_kod += "</td>"
-            
         html_kod += "</tr>"
         
     html_kod += "</table>"
-    
-    # Skriv ut hela tabellen på skärmen
     st.markdown(html_kod, unsafe_allow_html=True)
 
 # ==========================================
@@ -182,7 +171,7 @@ with flik_inloggning:
         st.image("logga.png", width=300)
         
     st.subheader("🔐 Logga in och ändra status")
-    st.write("Välj ditt namn och fyll i ditt personaliga lösenord.")
+    st.write("Välj ditt namn och fyll i ditt personliga lösenord.")
     
     kol_vänster, kol_mitten, kol_höger = st.columns(3)
     
@@ -195,7 +184,7 @@ with flik_inloggning:
         ny_status = st.radio("Välj din status för dessa dagar:", list(STATUS_VAL.keys()), horizontal=True)
         ny_kommentar = st.text_input("Lägg till en kommentar (frivilligt):", max_chars=40, placeholder="t.ex. Svarar i mobilen, Teams-möte")
         
-        losenord_input = st.text_input("Ange ditt personaliga lösenord:", type="password")
+        losenord_input = st.text_input("Ange ditt personliga lösenord:", type="password")
         
         if st.button("Spara och uppdatera schema", type="primary"):
             ratt_hash = ANSTALLDA_MED_LOSENORD[valt_namn]
@@ -207,9 +196,11 @@ with flik_inloggning:
                     for dag in valda_dagar:
                         uppdatera_status_i_db(valt_namn, dag, ny_status, ny_kommentar)
                     
-                    st.toast(f"✅ Ändringarna sparades i databasen för {valt_namn}!", icon="🎉")
-                    st.success(f"Klart! Statusen har sparats permanent i databasen.")
+                    # NYTT: Stor, tydlig popup-ruta i mitten av skärmen som fryser koden i 2 sekunder
+                    st.success(f"✅ Ändringarna sparades permanent för {valt_namn}!")
                     st.balloons()
+                    time.sleep(2.0)
+                    
                     st.rerun()
             else:
                 st.error("Fel lösenord för den valda personen! Statusen sparades inte.")
