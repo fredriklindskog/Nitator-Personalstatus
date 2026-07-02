@@ -59,8 +59,7 @@ def uppdatera_status_i_db(namn, dag, ny_status, ny_kommentar):
 
 # 3. Kalkylera datum och vecka
 idag = datetime.date.today()
-iso_info = idag.isocalendar()
-veckonummer = iso_info[1]
+veckonummer = idag.isocalendar()[1]
 
 mandag = idag - datetime.timedelta(days=idag.weekday())
 VECKODAGAR = ["Måndag", "Tisdag", "Onsdag", "Torsdag", "Fredag"]
@@ -106,13 +105,13 @@ with flik_tv:
     if os.path.exists("logga.png"):
         st.image("logga.png", width=300)
         
-    st.title("🏢 Personalens Veckoschema")
+    # NYTT: Ändrad ikon (👥) och ny kortare text ("Personal")
+    st.title("👥 Personal")
     st.subheader(f"🗓️ Vecka {veckonummer} | Dag-för-dag status")
     st.markdown("---")
 
     aktuell_data = hämta_alla_statusar()
 
-    # RÄTTAT: Lagt till index [0] för den första rubrikkolumnen
     rubrik_kolumner = st.columns(6)
     with rubrik_kolumner[0]:
         st.markdown("### 👤 Anställd")
@@ -123,7 +122,6 @@ with flik_tv:
     st.markdown("---")
 
     for namn in ANSTALLDA:
-        # RÄTTAT: Lagt till index [0] för personalens första kolumn
         rad_kolumner = st.columns(6)
         with rad_kolumner[0]:
             st.markdown(f"**{namn}**")
@@ -143,8 +141,9 @@ with flik_tv:
 # FLIK 2: INLOGGNINGSSIDAN
 # ==========================================
 with flik_inloggning:
+    # NYTT: Loggan är nu lika stor här (width=300) som på TV-skärmen
     if os.path.exists("logga.png"):
-        st.image("logga.png", width=150)
+        st.image("logga.png", width=300)
         
     st.title("🔐 Logga in och ändra status")
     st.write("Välj ditt namn och fyll i ditt personliga lösenord.")
@@ -154,7 +153,7 @@ with flik_inloggning:
     with kol_mitten:
         valt_namn = st.selectbox("Välj ditt namn i listan:", ANSTALLDA)
         
-        aktuell_dag_index = idg_idx if (idg_idx := idag.weekday()) < 5 else 0
+        aktuell_dag_index = idag.weekday() if idag.weekday() < 5 else 0
         valda_dagar = st.multiselect("Vilka dagar vill du ändra?", VECKODAGAR, default=[VECKODAGAR[aktuell_dag_index]])
         
         ny_status = st.radio("Välj din status för dessa dagar:", list(STATUS_VAL.keys()), horizontal=True)
