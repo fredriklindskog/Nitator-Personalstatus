@@ -8,8 +8,20 @@ import time
 # 1. Inställningar för hemsidan (Bred layout för TV-skärm)
 st.set_page_config(page_title="Veckostatus Personal", layout="wide")
 
+# NYTT: Rensar bort Streamlits standard-marginaler i toppen för att flytta upp allt
 st.markdown("""
 <style>
+    /* Ta bort tomrummet längst upp på sidan */
+    .block-container {
+        padding-top: 1rem !important;
+        padding-bottom: 0rem !important;
+    }
+    div[data-testid="stHeader"] {
+        height: 0px !important;
+        background: transparent !important;
+    }
+    
+    /* Tabellens egna inställningar */
     .status-tabell {
         width: 100%;
         border-collapse: collapse;
@@ -54,7 +66,7 @@ def initiera_databas():
         )
     ''')
     cursor.execute("SELECT COUNT(*) FROM veckostatus")
-    if cursor.fetchone() == 0:
+    if cursor.fetchone()[0] == 0:
         for namn in ANSTALLDA:
             for dag in VECKODAGAR:
                 cursor.execute(
@@ -91,7 +103,6 @@ def uppdatera_status_i_db(namn, dag, ny_status, ny_kommentar):
 # 3. Kalkylera datum och vecka
 idag = datetime.date.today()
 iso_info = idag.isocalendar()
-# RÄTTAT: Plockar ut enbart veckonumret ur ISO-kalendern (index 1 är själva veckan)
 veckonummer = iso_info[1]
 
 mandag = idag - datetime.timedelta(days=idag.weekday())
@@ -148,7 +159,7 @@ with flik_tv:
     html_kod += "</tr>"
     
     for namn in ANSTALLDA:
-        html_kod += f"<tr><td><strong>{namn}**</td>"
+        html_kod += f"<tr><td><strong>{namn}</strong></td>"
         for dag in VECKODAGAR:
             dag_data = aktuell_data[namn][dag]
             status_text = STATUS_VAL.get(dag_data["status"], "🟢 På jobb")
@@ -197,7 +208,6 @@ with flik_inloggning:
                     for dag in valda_dagar:
                         uppdatera_status_i_db(valt_namn, dag, ny_status, ny_kommentar)
                     
-                    # Visar enbart den gröna popup-rutan i 2 sekunder (ballongerna borttagna!)
                     st.success(f"✅ Ändringarna sparades permanent för {valt_namn}!")
                     time.sleep(2.0)
                     
