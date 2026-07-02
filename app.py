@@ -91,7 +91,8 @@ def uppdatera_status_i_db(namn, dag, ny_status, ny_kommentar):
 # 3. Kalkylera datum och vecka
 idag = datetime.date.today()
 iso_info = idag.isocalendar()
-veckonummer = iso_info
+# RÄTTAT: Plockar ut enbart veckonumret ur ISO-kalendern (index 1 är själva veckan)
+veckonummer = iso_info[1]
 
 mandag = idag - datetime.timedelta(days=idag.weekday())
 VECKODAGAR = ["Måndag", "Tisdag", "Onsdag", "Torsdag", "Fredag"]
@@ -147,7 +148,7 @@ with flik_tv:
     html_kod += "</tr>"
     
     for namn in ANSTALLDA:
-        html_kod += f"<tr><td><strong>{namn}</strong></td>"
+        html_kod += f"<tr><td><strong>{namn}**</td>"
         for dag in VECKODAGAR:
             dag_data = aktuell_data[namn][dag]
             status_text = STATUS_VAL.get(dag_data["status"], "🟢 På jobb")
@@ -196,9 +197,8 @@ with flik_inloggning:
                     for dag in valda_dagar:
                         uppdatera_status_i_db(valt_namn, dag, ny_status, ny_kommentar)
                     
-                    # NYTT: Stor, tydlig popup-ruta i mitten av skärmen som fryser koden i 2 sekunder
+                    # Visar enbart den gröna popup-rutan i 2 sekunder (ballongerna borttagna!)
                     st.success(f"✅ Ändringarna sparades permanent för {valt_namn}!")
-                    st.balloons()
                     time.sleep(2.0)
                     
                     st.rerun()
