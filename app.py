@@ -7,6 +7,21 @@ import os
 # 1. Inställningar för hemsidan (Bred layout för TV-skärm)
 st.set_page_config(page_title="Veckostatus Personal", layout="wide")
 
+# NYTT: Säker CSS-kod för att skugga varannan rad perfekt utan layoutfel
+st.html("""
+<style>
+    /* Färga bakgrunden på varannan container-rad */
+    [data-testid="stVerticalBlockBorderWithTitle"]:nth-child(even) {
+        background-color: #f7f9fa !important;
+        border-radius: 6px;
+        padding: 8px 12px !important;
+    }
+    [data-testid="stVerticalBlockBorderWithTitle"]:nth-child(odd) {
+        padding: 8px 12px !important;
+    }
+</style>
+""")
+
 # 2. Funktioner för att hantera SQL-databasen
 DB_FIL = "status.db"
 
@@ -23,7 +38,7 @@ def initiera_databas():
         )
     ''')
     cursor.execute("SELECT COUNT(*) FROM veckostatus")
-    if cursor.fetchone()[0] == 0:
+    if cursor.fetchone() == 0:
         for namn in ANSTALLDA:
             for dag in VECKODAGAR:
                 cursor.execute(
@@ -60,7 +75,7 @@ def uppdatera_status_i_db(namn, dag, ny_status, ny_kommentar):
 # 3. Kalkylera datum och vecka
 idag = datetime.date.today()
 iso_info = idag.isocalendar()
-veckonummer = iso_info[1]  # Plockar ut bara veckonumret som ett tal (t.ex. 27)
+veckonummer = iso_info[1]
 
 mandag = idag - datetime.timedelta(days=idag.weekday())
 VECKODAGAR = ["Måndag", "Tisdag", "Onsdag", "Torsdag", "Fredag"]
@@ -113,7 +128,7 @@ with flik_tv:
 
     # Rubrikrad
     rubrik_kolumner = st.columns(6)
-    with rubrik_kolumner[0]:
+    with rubrik_kolumner:
         st.markdown("<h4 style='margin:0;'>👤 Anställd</h4>", unsafe_allow_html=True)
     for i, dag_text in enumerate(DAG_MED_DATUM):
         with rubrik_kolumner[i+1]:
@@ -121,22 +136,11 @@ with flik_tv:
 
     st.markdown("<hr style='margin-top:10px; margin-bottom:15px; border:0; border-top:1px solid #ddd;'>", unsafe_allow_html=True)
 
-    # NYTT: Gå igenom personalen och lägg till skuggning på varannan rad (index % 2 == 0)
-    for index, namn in enumerate(ANSTALLDA):
-        # Bestäm bakgrundsfärg baserat på om raden är jämn eller ojämn
-        bakgrunds_farg = "#f9f9f9" if index % 2 == 0 else "transparent"
-        
-        # Vi omsluter raden i en container med vår valda bakgrundsfärg och lite luft (padding)
-        with st.container():
-            st.markdown(
-                f"""
-                <div style='background-color: {bakgrunds_farg}; padding: 10px; border-radius: 4px; margin-bottom: 2px;'>
-                """, 
-                unsafe_allow_html=True
-            )
-            
+    # Gå igenom personalen och lägg varje rad i en egen säker st.container
+    for namn in ANSTALLDA:
+        with st.container(border=False):
             rad_kolumner = st.columns(6)
-            with rad_kolumner[0]:
+            with rad_kolumner:
                 st.markdown(f"**{namn}**")
             
             for i, dag in enumerate(VECKODAGAR):
@@ -149,8 +153,6 @@ with flik_tv:
                         st.markdown(f"{status_text}  \n*💬 {kommentar_text}*")
                     else:
                         st.write(status_text)
-            
-            st.markdown("</div>", unsafe_allow_html=True)
 
 # ==========================================
 # FLIK 2: INLOGGNINGSSIDAN
@@ -162,7 +164,7 @@ with flik_inloggning:
     st.title("🔐 Logga in och ändra status")
     st.write("Välj ditt namn och fyll i ditt personliga lösenord.")
     
-    kol_vänster, kol_mitten, kol_höger = st.columns([1, 2, 1])
+    kol_vänster, kol_mitten, kol_höger = st.columns()
     
     with kol_mitten:
         valt_namn = st.selectbox("Välj ditt namn i listan:", ANSTALLDA)
