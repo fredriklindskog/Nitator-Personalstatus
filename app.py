@@ -11,15 +11,10 @@ st.set_page_config(page_title="Veckostatus Personal", layout="wide")
 # Justerade storlekar i CSS för att passa perfekt på en TV-skärm
 st.markdown("""
 <style>
-    /* RÄTTAT: Ger ett säkert utrymme i toppen så att menyknapparna inte döljs bakom skärmkanten */
+    /* RÄTTAT: Trycker ner hela innehållet ordentligt så att TV:n inte klipper bort knapparna */
     .block-container {
-        padding-top: 2rem !important;
+        padding-top: 4.5rem !important;
         padding-bottom: 0rem !important;
-    }
-    
-    /* Ger extra luft till själva menyväljaren */
-    div[data-testid="stHorizontalBlock"] {
-        margin-top: 10px !important;
     }
     
     .status-tabell {
@@ -224,7 +219,7 @@ else:
             if valt_namn is None:
                 st.error("⚠️ Du måste välja ditt namn i listan innan du kan spara!")
             elif not valda_dagar:
-                st.error("⚠️ Du måste välja minst en dag!")
+                st.error("⚠️ Du måste wybrać minst en dag!")
             else:
                 for dag in valda_dagar:
                     uppdatera_status_i_db(valt_namn, dag, ny_status, ny_kommentar)
