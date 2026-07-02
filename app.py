@@ -23,7 +23,7 @@ def initiera_databas():
         )
     ''')
     cursor.execute("SELECT COUNT(*) FROM veckostatus")
-    if cursor.fetchone() == 0:
+    if cursor.fetchone()[0] == 0:
         for namn in ANSTALLDA:
             for dag in VECKODAGAR:
                 cursor.execute(
@@ -60,7 +60,7 @@ def uppdatera_status_i_db(namn, dag, ny_status, ny_kommentar):
 # 3. Kalkylera datum och vecka
 idag = datetime.date.today()
 iso_info = idag.isocalendar()
-veckonummer = iso_info
+veckonummer = iso_info[1]
 
 mandag = idag - datetime.timedelta(days=idag.weekday())
 VECKODAGAR = ["Måndag", "Tisdag", "Onsdag", "Torsdag", "Fredag"]
@@ -103,9 +103,7 @@ flik_tv, flik_inloggning = st.tabs(["📺 TV-Skärm (Visa schema)", "🔐 Ändra
 # FLIK 1: TV-SKÄRMEN
 # ==========================================
 with flik_tv:
-    # NYTT: Lägger till loggan stort och centrerat i toppen av TV-skärmen
     if os.path.exists("logga.png"):
-        # width=300 sätter bredden i pixlar. Ändra till t.ex. 400 eller 500 om du vill ha den ännu större!
         st.image("logga.png", width=300)
         
     st.title("🏢 Personalens Veckoschema")
@@ -114,9 +112,9 @@ with flik_tv:
 
     aktuell_data = hämta_alla_statusar()
 
-    # Skapa 6 kolumner för rubriker
+    # RÄTTAT: Lagt till index [0] för den första rubrikkolumnen
     rubrik_kolumner = st.columns(6)
-    with rubrik_kolumner:
+    with rubrik_kolumner[0]:
         st.markdown("### 👤 Anställd")
     for i, dag_text in enumerate(DAG_MED_DATUM):
         with rubrik_kolumner[i+1]:
@@ -125,8 +123,9 @@ with flik_tv:
     st.markdown("---")
 
     for namn in ANSTALLDA:
+        # RÄTTAT: Lagt till index [0] för personalens första kolumn
         rad_kolumner = st.columns(6)
-        with rad_kolumner:
+        with rad_kolumner[0]:
             st.markdown(f"**{namn}**")
         
         for i, dag in enumerate(VECKODAGAR):
@@ -144,21 +143,19 @@ with flik_tv:
 # FLIK 2: INLOGGNINGSSIDAN
 # ==========================================
 with flik_inloggning:
-    # Visar en lite mindre logga även på inloggningssidan
     if os.path.exists("logga.png"):
         st.image("logga.png", width=150)
         
     st.title("🔐 Logga in och ändra status")
     st.write("Välj ditt namn och fyll i ditt personliga lösenord.")
     
-    kol_vänster, kol_mitten, kol_höger = st.columns()
+    kol_vänster, kol_mitten, kol_höger = st.columns([1, 2, 1])
     
     with kol_mitten:
         valt_namn = st.selectbox("Välj ditt namn i listan:", ANSTALLDA)
         
-        aktuell_dag_index = idag.weekday()
-        default_dag = [VECKODAGAR[aktuell_dag_index]] if aktuell_dag_index < 5 else [VECKODAGAR]
-        valda_dagar = st.multiselect("Vilka dagar vill du ändra?", VECKODAGAR, default=default_dag)
+        aktuell_dag_index = idg_idx if (idg_idx := idag.weekday()) < 5 else 0
+        valda_dagar = st.multiselect("Vilka dagar vill du ändra?", VECKODAGAR, default=[VECKODAGAR[aktuell_dag_index]])
         
         ny_status = st.radio("Välj din status för dessa dagar:", list(STATUS_VAL.keys()), horizontal=True)
         ny_kommentar = st.text_input("Lägg till en kommentar (frivilligt):", max_chars=40, placeholder="t.ex. Svarar i mobilen, Teams-möte")
