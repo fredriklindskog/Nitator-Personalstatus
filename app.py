@@ -7,19 +7,18 @@ import os
 # 1. Inställningar för hemsidan (Bred layout för TV-skärm)
 st.set_page_config(page_title="Veckostatus Personal", layout="wide")
 
-# CSS-kod för att göra varannan personrad ljusgrå
+# NYTT & RÄTTAT: Träffsäker CSS som skuggar varannan rad perfekt inuti Streamlits egna block
 st.html("""
 <style>
-    /* Skugga varannan rad i personalmatrisen */
-    .person-rad-jamn {
-        background-color: #f4f6f7 !important;
-        padding: 10px 15px !important;
-        border-radius: 6px;
-        margin: 4px 0px;
+    /* Hitta alla personrader och ge dem lite luft */
+    [data-testid="stVerticalBlockBorderWithTitle"] {
+        padding: 6px 12px !important;
+        margin: 2px 0px !important;
+        border-radius: 6px !important;
     }
-    .person-rad-ojamn {
-        padding: 10px 15px !important;
-        margin: 4px 0px;
+    /* Färga bakgrunden till ljusgrå på varannan rad */
+    [data-testid="stVerticalBlockBorderWithTitle"]:nth-of-type(even) {
+        background-color: #f4f6f7 !important;
     }
 </style>
 """)
@@ -76,8 +75,8 @@ def uppdatera_status_i_db(namn, dag, ny_status, ny_kommentar):
 
 # 3. Kalkylera datum och vecka
 idag = datetime.date.today()
-iso_info = idag.isocalendar()
-veckonummer = iso_info[1]
+iso_info = idag.isocalendar()[1]
+veckonummer = iso_info
 
 mandag = idag - datetime.timedelta(days=idag.weekday())
 VECKODAGAR = ["Måndag", "Tisdag", "Onsdag", "Torsdag", "Fredag"]
@@ -128,7 +127,7 @@ with flik_tv:
 
     aktuell_data = hämta_alla_statusar()
 
-    # RÄTTAT: Lagt till [0] för den första rubrikkolumnen
+    # Rubrikrad
     rubrik_kolumner = st.columns(6)
     with rubrik_kolumner[0]:
         st.markdown("<h4 style='margin:0;'>👤 Anställd</h4>", unsafe_allow_html=True)
@@ -138,13 +137,9 @@ with flik_tv:
 
     st.markdown("<hr style='margin-top:10px; margin-bottom:15px; border:0; border-top:1px solid #ddd;'>", unsafe_allow_html=True)
 
-    for index, namn in enumerate(ANSTALLDA):
-        rad_klass = "person-rad-jamn" if index % 2 == 0 else "person-rad-ojamn"
-        
+    # Raderna för personalen (Nu helt rena från trasig HTML-kod)
+    for namn in ANSTALLDA:
         with st.container():
-            st.markdown(f"<div class='{rad_klass}'>", unsafe_allow_html=True)
-            
-            # RÄTTAT: Lagt till [0] för personalens första kolumn
             rad_kolumner = st.columns(6)
             with rad_kolumner[0]:
                 st.markdown(f"**{namn}**")
@@ -159,8 +154,6 @@ with flik_tv:
                         st.markdown(f"{status_text}  \n*💬 {kommentar_text}*")
                     else:
                         st.write(status_text)
-                        
-            st.markdown("</div>", unsafe_allow_html=True)
 
 # ==========================================
 # FLIK 2: INLOGGNINGSSIDAN
