@@ -8,17 +8,18 @@ import time
 # 1. Inställningar för hemsidan (Bred layout för TV-skärm)
 st.set_page_config(page_title="Veckostatus Personal", layout="wide")
 
-# NYTT: Rensar bort Streamlits standard-marginaler i toppen för att flytta upp allt
+# RÄTTAT: Justerad CSS som flyttar upp allt UTAN att dölja flikarna
 st.markdown("""
 <style>
-    /* Ta bort tomrummet längst upp på sidan */
+    /* Minska tomrummet längst upp på sidan */
     .block-container {
-        padding-top: 1rem !important;
+        padding-top: 0.5rem !important;
         padding-bottom: 0rem !important;
     }
-    div[data-testid="stHeader"] {
-        height: 0px !important;
-        background: transparent !important;
+    
+    /* Justera flikarna så de ligger tight mot toppen */
+    .stTabs {
+        margin-top: 0px !important;
     }
     
     /* Tabellens egna inställningar */
@@ -66,7 +67,7 @@ def initiera_databas():
         )
     ''')
     cursor.execute("SELECT COUNT(*) FROM veckostatus")
-    if cursor.fetchone()[0] == 0:
+    if cursor.fetchone() == 0:
         for namn in ANSTALLDA:
             for dag in VECKODAGAR:
                 cursor.execute(
