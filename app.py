@@ -91,8 +91,8 @@ def uppdatera_status_i_db(namn, dag, ny_status, ny_kommentar):
 
 # 3. Kalkylera datum och vecka
 idag = datetime.date.today()
-iso_info = idag.isocalendar()
-veckonummer = iso_info
+# RÄTTAT: Plockar ut enbart veckonumret direkt som en ren siffra (t.ex. 27)
+veckonummer = idag.isocalendar().week
 
 mandag = idag - datetime.timedelta(days=idag.weekday())
 VECKODAGAR = ["Måndag", "Tisdag", "Onsdag", "Torsdag", "Fredag"]
@@ -121,20 +121,19 @@ ANSTALLDA = [
 
 initiera_databas()
 
-# NYTT: Håll reda på vilken flik användaren klickar på
-if "nuvarande_flik" not in st.session_state:
-    st.session_state.nuvarande_flik = "📺 TV-Skärm (Visa schema)"
+# Skapa ett stabilt minne för att rensa rullistan vid flikbyte
+if "valt_namn_index" not in st.session_state:
+    st.session_state.valt_namn_index = None
 
 # --- SEPARATA FLIKAR HÖGST UPP PÅ SIDAN ---
-valda_flikar = ["📺 TV-Skärm (Visa schema)", "🔐 Ändra Status"]
-flik_tv, flik_inloggning = st.tabs(valda_flikar)
+flik_tv, flik_inloggning = st.tabs(["📺 TV-Skärm (Visa schema)", "🔐 Ändra Status"])
 
 # ==========================================
 # FLIK 1: TV-SKÄRMEN
 # ==========================================
 with flik_tv:
-    # Om användaren precis kom hit från ändra-fliken, uppdatera minnet
-    st.session_state.nuvarande_flik = "📺 TV-Skärm (Visa schema)"
+    # När vi tittar på TV-skärmen ser vi till att inloggningsnamnet nollställs i bakgrunden
+    st.session_state.valt_namn_index = None
     
     if os.path.exists("logga.png"):
         st.image("logga.png", width=300)
@@ -171,12 +170,6 @@ with flik_tv:
 # FLIK 2: ÄNDRA STATUS
 # ==========================================
 with flik_inloggning:
-    # NYTT: Skapa ett unikt ID för rullistan som ändras om man precis bytt flik. 
-    # Detta tvingar Streamlit att helt glömma det gamla namnet och göra rutan tom!
-    if st.session_state.nuvarande_flik != "🔐 Ändra Status":
-        st.session_state.reboot_key = str(time.time())
-        st.session_state.nuvarande_flik = "🔐 Ändra Status"
-
     if os.path.exists("logga.png"):
         st.image("logga.png", width=300)
         
@@ -186,13 +179,12 @@ with flik_inloggning:
     kol_vänster, kol_mitten, kol_höger = st.columns(3)
     
     with kol_mitten:
-        # Rullistan har nu en 'key' kopplad till vårt minne, vilket gör den tom varje gång man klickar här!
+        # RÄTTAT: Rullistan använder nu st.session_state vilket gör den tom (None) varje gång man precis har bytt flik
         valt_namn = st.selectbox(
             "Välj ditt namn i listan:", 
             ANSTALLDA, 
-            index=None, 
-            placeholder="Välj ditt namn...",
-            key=st.session_state.reboot_key
+            index=st.session_state.valt_namn_index, 
+            placeholder="Välj ditt namn..."
         )
         
         aktuell_dag_index = idag.weekday()
@@ -214,6 +206,8 @@ with flik_inloggning:
                     uppdatera_status_i_db(valt_namn, dag, ny_status, ny_kommentar)
                 
                 st.success(f"✅ Ändringarna sparades permanent för {valt_namn}!")
+                
+                # Tvinga namnet att bli tomt inför nästa omladdning
+                st.session_state.valt_namn_index = None
                 time.sleep(2.0)
-                # Eftersom vi kör rerun återställs fliken till TV-skärmen och namnet rensas inför nästa gång
                 st.rerun()
