@@ -1,11 +1,69 @@
 import streamlit as st
 import hashlib
 import datetime
+import sqlite3
 
 # 1. Inställningar för hemsidan (Bred layout för TV-skärm)
 st.set_page_config(page_title="Veckostatus Personal", layout="wide")
 
-# 2. Kalkylera datum och vecka
+# 2. Funktioner för att hantera SQL-databasen
+DB_FIL = "status.db"
+
+def initiera_databas():
+    """Skapar databastabellen och lägger till de anställda om de inte finns."""
+    conn = sqlite3.connect(DB_FIL)
+    cursor = conn.cursor()
+    
+    # Skapa tabell för att lagra status och kommentar för varje person och dag
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS veckostatus (
+            namn TEXT,
+            dag TEXT,
+            status TEXT,
+            kommentar TEXT,
+            PRIMARY KEY (namn, dag)
+        )
+    ''')
+    
+    # Kontrollera om vi behöver lägga till standardvärden ("På jobb")
+    cursor.execute("SELECT COUNT(*) FROM veckostatus")
+    if cursor.fetchone()[0] == 0:
+        for namn in ANSTALLDA:
+            for dag in VECKODAGAR:
+                cursor.execute(
+                    "INSERT INTO veckostatus (namn, dag, status, kommentar) VALUES (?, ?, ?, ?)",
+                    (namn, dag, "På jobb", "")
+                )
+        conn.commit()
+    conn.close()
+
+def hämta_alla_statusar():
+    """Hämtar all data från databasen och bygger om till ett smidigt Python-lexikon."""
+    conn = sqlite3.connect(DB_FIL)
+    cursor = conn.cursor()
+    cursor.execute("SELECT namn, dag, status, kommentar FROM veckostatus")
+    rader = cursor.fetchall()
+    conn.close()
+    
+    data = {namn: {dag: {"status": "På jobb", "kommentar": ""} for dag in VECKODAGAR} for namn in ANSTALLDA}
+    for namn, dag, status, kommentar in rader:
+        if namn in data and dag in data[namn]:
+            data[namn][dag] = {"status": status, "kommentar": kommentar}
+    return data
+
+def uppdatera_status_i_db(namn, dag, ny_status, ny_kommentar):
+    """Uppdaterar eller sätter in en specifik status och kommentar i databasen."""
+    conn = sqlite3.connect(DB_FIL)
+    cursor = conn.cursor()
+    cursor.execute('''
+        INSERT INTO veckostatus (namn, dag, status, kommentar)
+        VALUES (?, ?, ?, ?)
+        ON CONFLICT(namn, dag) DO UPDATE SET status=excluded.status, kommentar=excluded.kommentar
+    ''', (namn, dag, ny_status, ny_kommentar))
+    conn.commit()
+    conn.close()
+
+# 3. Kalkylera datum och vecka
 idag = datetime.date.today()
 iso_info = idag.isocalendar()
 veckonummer = iso_info[1]  # Hämtar det exakta veckonumret
@@ -41,10 +99,8 @@ ANSTALLDA_MED_LOSENORD = {
 # Skapa en ren lista med bara namnen för rullistan
 ANSTALLDA = list(ANSTALLDA_MED_LOSENORD.keys())
 
-if "veckodb" not in st.session_state:
-    st.session_state.veckodb = {
-        namn: {dag: {"status": "Ledig", "kommentar": ""} for dag in VECKODAGAR} for namn in ANSTALLDA
-    }
+# Starta och bygg databasen om det behövs
+initiera_databas()
 
 # --- SEPARATA FLIKAR HÖGST UPP PÅ SIDAN ---
 flik_tv, flik_inloggning = st.tabs(["📺 TV-Skärm (Visa schema)", "🔐 Ändra Status (Logga in)"])
@@ -57,29 +113,35 @@ with flik_tv:
     st.subheader(f"🗓️ Vecka {veckonummer} | Dag-för-dag status")
     st.markdown("---")
 
-    # RÄTTAT: Skapa 6 kolumner och lägg till index [0] för första kolumnen
+    # Hämta dagsfärsk data direkt från SQL-databasen
+    aktuell_data = hämta_alla_statusar()
+
+    # Skapa 6 kolumner för rubriker
     rubrik_kolumner = st.columns(6)
-    rubrik_kolumner[0].markdown("### 👤 Anställd")
+    with rubrik_kolumner[0]:
+        st.markdown("### 👤 Anställd")
     for i, dag_text in enumerate(DAG_MED_DATUM):
-        rubrik_kolumner[i+1].markdown(f"### {dag_text}")
+        with rubrik_kolumner[i+1]:
+            st.markdown(f"### {dag_text}")
 
     st.markdown("---")
 
     # Visa rader för anställda
     for namn in ANSTALLDA:
-        # RÄTTAT: Skapa 6 kolumner även för personalen och lägg till index [0]
         rad_kolumner = st.columns(6)
-        rad_kolumner[0].markdown(f"**{namn}**")
+        with rad_kolumner[0]:
+            st.markdown(f"**{namn}**")
         
         for i, dag in enumerate(VECKODAGAR):
-            dag_data = st.session_state.veckodb[namn][dag]
-            status_text = STATUS_VAL.get(dag_data["status"], "⚪ Ledig")
+            dag_data = aktuell_data[namn][dag]
+            status_text = STATUS_VAL.get(dag_data["status"], "🟢 På jobb")
             kommentar_text = dag_data["kommentar"]
             
-            if kommentar_text.strip():
-                rad_kolumner[i+1].markdown(f"{status_text}  \n*💬 {kommentar_text}*")
-            else:
-                rad_kolumner[i+1].write(status_text)
+            with rad_kolumner[i+1]:
+                if kommentar_text.strip():
+                    st.markdown(f"{status_text}  \n*💬 {kommentar_text}*")
+                else:
+                    st.write(status_text)
 
 # ==========================================
 # FLIK 2: INLOGGNINGSSIDAN
@@ -88,9 +150,9 @@ with flik_inloggning:
     st.title("🔐 Logga in och ändra status")
     st.write("Välj ditt namn och fyll i ditt personliga lösenord.")
     
-    infofalt, indatafalt = st.columns([1, 4]) # Justerad för snyggare bredd på mobilen
+    kol_vänster, kol_mitten, kol_höger = st.columns([1, 2, 1])
     
-    with indatafalt:
+    with kol_mitten:
         valt_namn = st.selectbox("Välj ditt namn i listan:", ANSTALLDA)
         
         aktuell_dag_index = idag.weekday()
@@ -109,10 +171,12 @@ with flik_inloggning:
                 if not valda_dagar:
                     st.error("Du måste välja minst en dag!")
                 else:
+                    # Spara ändringarna direkt i SQL-databasen för varje vald dag
                     for dag in valda_dagar:
-                        st.session_state.veckodb[valt_namn][dag]["status"] = ny_status
-                        st.session_state.veckodb[valt_namn][dag]["kommentar"] = ny_kommentar
-                    st.success(f"Klart! Statusen har uppdaterats för {valt_namn}.")
+                        uppdatera_status_i_db(valt_namn, dag, ny_status, ny_kommentar)
+                    
+                    st.toast(f"✅ Ändringarna sparades i databasen för {valt_namn}!", icon="🎉")
+                    st.success(f"Klart! Statusen har sparats permanent i databasen.")
                     st.balloons()
                     st.rerun()
             else:
