@@ -23,7 +23,7 @@ def initiera_databas():
         )
     ''')
     cursor.execute("SELECT COUNT(*) FROM veckostatus")
-    if cursor.fetchone() == 0:
+    if cursor.fetchone()[0] == 0:
         for namn in ANSTALLDA:
             for dag in VECKODAGAR:
                 cursor.execute(
@@ -106,36 +106,51 @@ with flik_tv:
     if os.path.exists("logga.png"):
         st.image("logga.png", width=300)
         
-    # NYTT: Rubriken borttagen helt. Kalenderraden ligger nu direkt under loggan.
-    st.subheader(f"🗓️ Vecka {veckonummer} | Dag-för-dag status")
-    st.markdown("---")
+    st.markdown(f"<h4 style='margin:0; font-weight:normal;'>🗓️ Vecka {veckonummer} | Dag-för-dag status</h4>", unsafe_allow_html=True)
+    st.markdown("<hr style='margin-top:5px; margin-bottom:10px; border:0; border-top:1px solid #ddd;'>", unsafe_allow_html=True)
 
     aktuell_data = hämta_alla_statusar()
 
+    # Rubrikrad
     rubrik_kolumner = st.columns(6)
     with rubrik_kolumner[0]:
-        st.markdown("### 👤 Anställd")
+        st.markdown("<h4 style='margin:0;'>👤 Anställd</h4>", unsafe_allow_html=True)
     for i, dag_text in enumerate(DAG_MED_DATUM):
         with rubrik_kolumner[i+1]:
-            st.markdown(f"### {dag_text}")
+            st.markdown(f"<h4 style='margin:0;'>{dag_text}</h4>", unsafe_allow_html=True)
 
-    st.markdown("---")
+    st.markdown("<hr style='margin-top:10px; margin-bottom:15px; border:0; border-top:1px solid #ddd;'>", unsafe_allow_html=True)
 
-    for namn in ANSTALLDA:
-        rad_kolumner = st.columns(6)
-        with rad_kolumner[0]:
-            st.markdown(f"**{namn}**")
+    # NYTT: Gå igenom personalen och lägg till skuggning på varannan rad (index % 2 == 0)
+    for index, namn in enumerate(ANSTALLDA):
+        # Bestäm bakgrundsfärg baserat på om raden är jämn eller ojämn
+        bakgrunds_farg = "#f9f9f9" if index % 2 == 0 else "transparent"
         
-        for i, dag in enumerate(VECKODAGAR):
-            dag_data = aktuell_data[namn][dag]
-            status_text = STATUS_VAL.get(dag_data["status"], "🟢 På jobb")
-            kommentar_text = dag_data["kommentar"]
+        # Vi omsluter raden i en container med vår valda bakgrundsfärg och lite luft (padding)
+        with st.container():
+            st.markdown(
+                f"""
+                <div style='background-color: {bakgrunds_farg}; padding: 10px; border-radius: 4px; margin-bottom: 2px;'>
+                """, 
+                unsafe_allow_html=True
+            )
             
-            with rad_kolumner[i+1]:
-                if kommentar_text.strip():
-                    st.markdown(f"{status_text}  \n*💬 {kommentar_text}*")
-                else:
-                    st.write(status_text)
+            rad_kolumner = st.columns(6)
+            with rad_kolumner[0]:
+                st.markdown(f"**{namn}**")
+            
+            for i, dag in enumerate(VECKODAGAR):
+                dag_data = aktuell_data[namn][dag]
+                status_text = STATUS_VAL.get(dag_data["status"], "🟢 På jobb")
+                kommentar_text = dag_data["kommentar"]
+                
+                with rad_kolumner[i+1]:
+                    if kommentar_text.strip():
+                        st.markdown(f"{status_text}  \n*💬 {kommentar_text}*")
+                    else:
+                        st.write(status_text)
+            
+            st.markdown("</div>", unsafe_allow_html=True)
 
 # ==========================================
 # FLIK 2: INLOGGNINGSSIDAN
@@ -147,7 +162,7 @@ with flik_inloggning:
     st.title("🔐 Logga in och ändra status")
     st.write("Välj ditt namn och fyll i ditt personliga lösenord.")
     
-    kol_vänster, kol_mitten, kol_höger = st.columns([1, 2, 1]) # Centrerar rutan snyggt
+    kol_vänster, kol_mitten, kol_höger = st.columns([1, 2, 1])
     
     with kol_mitten:
         valt_namn = st.selectbox("Välj ditt namn i listan:", ANSTALLDA)
