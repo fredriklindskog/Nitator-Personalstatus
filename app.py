@@ -40,7 +40,7 @@ def initiera_databas():
         )
     ''')
     cursor.execute("SELECT COUNT(*) FROM veckostatus")
-    if cursor.fetchone() == 0:
+    if cursor.fetchone()[0] == 0:
         for namn in ANSTALLDA:
             for dag in VECKODAGAR:
                 cursor.execute(
@@ -77,7 +77,7 @@ def uppdatera_status_i_db(namn, dag, ny_status, ny_kommentar):
 # 3. Kalkylera datum och vecka
 idag = datetime.date.today()
 iso_info = idag.isocalendar()
-veckonummer = iso_info
+veckonummer = iso_info[1]
 
 mandag = idag - datetime.timedelta(days=idag.weekday())
 VECKODAGAR = ["Måndag", "Tisdag", "Onsdag", "Torsdag", "Fredag"]
@@ -128,8 +128,9 @@ with flik_tv:
 
     aktuell_data = hämta_alla_statusar()
 
+    # RÄTTAT: Lagt till [0] för den första rubrikkolumnen
     rubrik_kolumner = st.columns(6)
-    with rubrik_kolumner:
+    with rubrik_kolumner[0]:
         st.markdown("<h4 style='margin:0;'>👤 Anställd</h4>", unsafe_allow_html=True)
     for i, dag_text in enumerate(DAG_MED_DATUM):
         with rubrik_kolumner[i+1]:
@@ -143,8 +144,9 @@ with flik_tv:
         with st.container():
             st.markdown(f"<div class='{rad_klass}'>", unsafe_allow_html=True)
             
+            # RÄTTAT: Lagt till [0] för personalens första kolumn
             rad_kolumner = st.columns(6)
-            with rad_kolumner:
+            with rad_kolumner[0]:
                 st.markdown(f"**{namn}**")
             
             for i, dag in enumerate(VECKODAGAR):
@@ -167,7 +169,6 @@ with flik_inloggning:
     if os.path.exists("logga.png"):
         st.image("logga.png", width=300)
         
-    # NYTT: Ändrat st.title till st.subheader för en mindre och snyggare rubrik text
     st.subheader("🔐 Logga in och ändra status")
     st.write("Välj ditt namn och fyll i ditt personliga lösenord.")
     
