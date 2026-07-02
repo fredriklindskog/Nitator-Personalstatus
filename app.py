@@ -92,7 +92,7 @@ def uppdatera_status_i_db(namn, dag, ny_status, ny_kommentar):
 # 3. Kalkylera datum och vecka
 idag = datetime.date.today()
 iso_info = idag.isocalendar()
-veckonummer = iso_info[1]
+veckonummer = iso_info
 
 mandag = idag - datetime.timedelta(days=idag.weekday())
 VECKODAGAR = ["Måndag", "Tisdag", "Onsdag", "Torsdag", "Fredag"]
@@ -121,13 +121,21 @@ ANSTALLDA = [
 
 initiera_databas()
 
+# NYTT: Håll reda på vilken flik användaren klickar på
+if "nuvarande_flik" not in st.session_state:
+    st.session_state.nuvarande_flik = "📺 TV-Skärm (Visa schema)"
+
 # --- SEPARATA FLIKAR HÖGST UPP PÅ SIDAN ---
-flik_tv, flik_inloggning = st.tabs(["📺 TV-Skärm (Visa schema)", "🔐 Ändra Status"])
+valda_flikar = ["📺 TV-Skärm (Visa schema)", "🔐 Ändra Status"]
+flik_tv, flik_inloggning = st.tabs(valda_flikar)
 
 # ==========================================
 # FLIK 1: TV-SKÄRMEN
 # ==========================================
 with flik_tv:
+    # Om användaren precis kom hit från ändra-fliken, uppdatera minnet
+    st.session_state.nuvarande_flik = "📺 TV-Skärm (Visa schema)"
+    
     if os.path.exists("logga.png"):
         st.image("logga.png", width=300)
         
@@ -163,6 +171,12 @@ with flik_tv:
 # FLIK 2: ÄNDRA STATUS
 # ==========================================
 with flik_inloggning:
+    # NYTT: Skapa ett unikt ID för rullistan som ändras om man precis bytt flik. 
+    # Detta tvingar Streamlit att helt glömma det gamla namnet och göra rutan tom!
+    if st.session_state.nuvarande_flik != "🔐 Ändra Status":
+        st.session_state.reboot_key = str(time.time())
+        st.session_state.nuvarande_flik = "🔐 Ändra Status"
+
     if os.path.exists("logga.png"):
         st.image("logga.png", width=300)
         
@@ -172,12 +186,17 @@ with flik_inloggning:
     kol_vänster, kol_mitten, kol_höger = st.columns(3)
     
     with kol_mitten:
-        # Tvingar rullistan att vara tom ("Välj...") vid start
-        valt_namn = st.selectbox("Välj ditt namn i listan:", ANSTALLDA, index=None, placeholder="Välj ditt namn...")
+        # Rullistan har nu en 'key' kopplad till vårt minne, vilket gör den tom varje gång man klickar här!
+        valt_namn = st.selectbox(
+            "Välj ditt namn i listan:", 
+            ANSTALLDA, 
+            index=None, 
+            placeholder="Välj ditt namn...",
+            key=st.session_state.reboot_key
+        )
         
-        # RÄTTAT: Säker och enkel beräkning av aktuell dag
         aktuell_dag_index = idag.weekday()
-        if aktuell_dag_index > 4:  # Om det är helg, förval välj måndag (index 0)
+        if aktuell_dag_index > 4:
             aktuell_dag_index = 0
             
         valda_dagar = st.multiselect("Vilka dagar vill du ändra?", VECKODAGAR, default=[VECKODAGAR[aktuell_dag_index]])
@@ -196,4 +215,5 @@ with flik_inloggning:
                 
                 st.success(f"✅ Ändringarna sparades permanent för {valt_namn}!")
                 time.sleep(2.0)
+                # Eftersom vi kör rerun återställs fliken till TV-skärmen och namnet rensas inför nästa gång
                 st.rerun()
