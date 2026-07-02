@@ -8,7 +8,7 @@ import time
 # 1. Inställningar för hemsidan (Bred layout för TV-skärm)
 st.set_page_config(page_title="Veckostatus Personal", layout="wide")
 
-# CSS-kod enbart för tabellens utseende (Inga marginal-justeringar som döljer flikar)
+# CSS-kod för tabellens utseende
 st.markdown("""
 <style>
     .status-tabell {
@@ -92,7 +92,8 @@ def uppdatera_status_i_db(namn, dag, ny_status, ny_kommentar):
 # 3. Kalkylera datum och vecka
 idag = datetime.date.today()
 iso_info = idag.isocalendar()
-veckonummer = iso_info
+# RÄTTAT: Plockar ut enbart veckonumret ur ISO-kalendern (index 1 är själva veckan)
+veckonummer = iso_info[1]
 
 mandag = idag - datetime.timedelta(days=idag.weekday())
 VECKODAGAR = ["Måndag", "Tisdag", "Onsdag", "Torsdag", "Fredag"]
@@ -192,7 +193,7 @@ with flik_inloggning:
             
             if kryptera_losenord(losenord_input) == ratt_hash:
                 if not valda_dagar:
-                    st.error("Du måste välja minst en dag!")
+                    st.error("Ducookie måste välja minst en dag!")
                 else:
                     for dag in valda_dagar:
                         uppdatera_status_i_db(valt_namn, dag, ny_status, ny_kommentar)
