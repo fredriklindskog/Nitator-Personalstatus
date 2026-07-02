@@ -8,19 +8,24 @@ import time
 # 1. Inställningar för hemsidan (Bred layout för TV-skärm)
 st.set_page_config(page_title="Veckostatus Personal", layout="wide")
 
-# NYTT: Justerade storlekar i CSS för att passa perfekt på en TV-skärm
+# Justerade storlekar i CSS för att passa perfekt på en TV-skärm
 st.markdown("""
 <style>
-    /* Krymp tomrummet i toppen av skärmen ännu mer */
+    /* RÄTTAT: Ger ett säkert utrymme i toppen så att menyknapparna inte döljs bakom skärmkanten */
     .block-container {
-        padding-top: 0.2rem !important;
+        padding-top: 2rem !important;
         padding-bottom: 0rem !important;
+    }
+    
+    /* Ger extra luft till själva menyväljaren */
+    div[data-testid="stHorizontalBlock"] {
+        margin-top: 10px !important;
     }
     
     .status-tabell {
         width: 100%;
         border-collapse: collapse;
-        margin-top: 5px;
+        margin-top: 15px;
     }
     /* Mindre text på rubrikerna */
     .status-tabell th {
@@ -151,7 +156,7 @@ if val_flik == "📺 TV-Skärm (Visa schema)":
     st.session_state.sparade_just_nu = True
     
     if os.path.exists("logga.png"):
-        st.image("logga.png", width=250) # Minskat loggan till 250px för att spara vertikalt utrymme
+        st.image("logga.png", width=250)
         
     st.markdown(f"<p style='margin:0; font-size:0.8rem; color:#666;'><span style='font-size:0.9rem;'>🗓️</span> Vecka {veckonummer} | Dag-för-dag status</p>", unsafe_allow_html=True)
     st.markdown("<hr style='margin-top:3px; margin-bottom:5px; border:0; border-top:1px solid #ddd;'>", unsafe_allow_html=True)
