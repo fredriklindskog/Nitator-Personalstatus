@@ -14,7 +14,7 @@ mandag = idag - datetime.timedelta(days=idag.weekday())
 VECKODAGAR = ["Måndag", "Tisdag", "Onsdag", "Torsdag", "Fredag"]
 DAG_MED_DATUM = [f"{dag} ({ (mandag + datetime.timedelta(days=i)).strftime('%d/%m') })" for i, dag in enumerate(VECKODAGAR)]
 
-# NYTT: Föräldraledig har nu fått en barnvagns-emoji (👶)!
+# Listan med era ikoner
 STATUS_VAL = {
     "På jobb": "🟢 På jobb",
     "Arbetar hemifrån": "🟣 Arbetar hemifrån",
@@ -57,16 +57,19 @@ with flik_tv:
     st.subheader(f"🗓️ Vecka {veckonummer} | Dag-för-dag status")
     st.markdown("---")
 
+    # RÄTTAT: Skapa 6 kolumner och lägg till index [0] för första kolumnen
     rubrik_kolumner = st.columns(6)
-    rubrik_kolumner.markdown("### 👤 Anställd")
+    rubrik_kolumner[0].markdown("### 👤 Anställd")
     for i, dag_text in enumerate(DAG_MED_DATUM):
         rubrik_kolumner[i+1].markdown(f"### {dag_text}")
 
     st.markdown("---")
 
+    # Visa rader för anställda
     for namn in ANSTALLDA:
+        # RÄTTAT: Skapa 6 kolumner även för personalen och lägg till index [0]
         rad_kolumner = st.columns(6)
-        rad_kolumner.markdown(f"**{namn}**")
+        rad_kolumner[0].markdown(f"**{namn}**")
         
         for i, dag in enumerate(VECKODAGAR):
             dag_data = st.session_state.veckodb[namn][dag]
@@ -83,15 +86,15 @@ with flik_tv:
 # ==========================================
 with flik_inloggning:
     st.title("🔐 Logga in och ändra status")
-    st.write("Välj ditt namn och fyll i ditt personaliga lösenord.")
+    st.write("Välj ditt namn och fyll i ditt personliga lösenord.")
     
-    infofalt, indatafalt = st.columns()
+    infofalt, indatafalt = st.columns([1, 4]) # Justerad för snyggare bredd på mobilen
     
     with indatafalt:
         valt_namn = st.selectbox("Välj ditt namn i listan:", ANSTALLDA)
         
         aktuell_dag_index = idag.weekday()
-        default_dag = [VECKODAGAR[aktuell_dag_index]] if aktuell_dag_index < 5 else [VECKODAGAR]
+        default_dag = [VECKODAGAR[aktuell_dag_index]] if aktuell_dag_index < 5 else [VECKODAGAR[0]]
         valda_dagar = st.multiselect("Vilka dagar vill du ändra?", VECKODAGAR, default=default_dag)
         
         ny_status = st.radio("Välj din status för dessa dagar:", list(STATUS_VAL.keys()), horizontal=True)
@@ -111,5 +114,6 @@ with flik_inloggning:
                         st.session_state.veckodb[valt_namn][dag]["kommentar"] = ny_kommentar
                     st.success(f"Klart! Statusen har uppdaterats för {valt_namn}.")
                     st.balloons()
+                    st.rerun()
             else:
                 st.error("Fel lösenord för den valda personen! Statusen sparades inte.")
