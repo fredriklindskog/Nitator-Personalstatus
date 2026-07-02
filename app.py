@@ -91,7 +91,6 @@ def uppdatera_status_i_db(namn, dag, ny_status, ny_kommentar):
 
 # 3. Kalkylera datum och vecka
 idag = datetime.date.today()
-# RÄTTAT: Plockar ut enbart veckonumret direkt som en ren siffra (t.ex. 27)
 veckonummer = idag.isocalendar().week
 
 mandag = idag - datetime.timedelta(days=idag.weekday())
@@ -121,20 +120,26 @@ ANSTALLDA = [
 
 initiera_databas()
 
-# Skapa ett stabilt minne för att rensa rullistan vid flikbyte
-if "valt_namn_index" not in st.session_state:
-    st.session_state.valt_namn_index = None
+# NYTT: Skapa räknare i minnet för att kontrollera nollställningen
+if "form_id" not in st.session_state:
+    st.session_state.form_id = 0
+if "senaste_flik" not in st.session_state:
+    st.session_state.senaste_flik = 0
 
 # --- SEPARATA FLIKAR HÖGST UPP PÅ SIDAN ---
-flik_tv, flik_inloggning = st.tabs(["📺 TV-Skärm (Visa schema)", "🔐 Ändra Status"])
+# Vi lägger till en 'key' på st.tabs för att hålla koll på vilken flik som är aktiv just nu
+valt_tab_index = st.tabs(["📺 TV-Skärm (Visa schema)", "🔐 Ändra Status"])
 
 # ==========================================
 # FLIK 1: TV-SKÄRMEN
 # ==========================================
-with flik_tv:
-    # När vi tittar på TV-skärmen ser vi till att inloggningsnamnet nollställs i bakgrunden
-    st.session_state.valt_namn_index = None
-    
+with valt_tab_index[0]:
+    # NYTT: Om man klickar på TV-fliken, ändra räknaren så att inloggningen rensas till nästa gång
+    if st.session_state.senaste_flik != 0:
+        st.session_state.form_id += 1
+        st.session_state.senaste_flik = 0
+        st.rerun()
+
     if os.path.exists("logga.png"):
         st.image("logga.png", width=300)
         
@@ -169,22 +174,27 @@ with flik_tv:
 # ==========================================
 # FLIK 2: ÄNDRA STATUS
 # ==========================================
-with flik_inloggning:
+with valt_tab_index[1]:
+    # Kom ihåg att vi har besökt ändra-fliken
+    st.session_state.senaste_flik = 1
+
     if os.path.exists("logga.png"):
         st.image("logga.png", width=300)
         
-    st.subheader("📝 Ändra din status")
-    st.write("Välj ditt namn och välj vilka dagar du vill uppdatera.")
+    st.subheader("🔐 Logga in och ändra status")
+    st.write("Välj ditt namn och fyll i ditt personliga lösenord.")
     
     kol_vänster, kol_mitten, kol_höger = st.columns(3)
     
     with kol_mitten:
-        # RÄTTAT: Rullistan använder nu st.session_state vilket gör den tom (None) varje gång man precis har bytt flik
+        # NYTT: key=f"namn_ruta_{st.session_state.form_id}" gör att rutan tvingas bli tom ("Välj ditt namn...") 
+        # så fort form_id-räknaren har tickat upp i bakgrunden när man lämnade fliken.
         valt_namn = st.selectbox(
             "Välj ditt namn i listan:", 
             ANSTALLDA, 
-            index=st.session_state.valt_namn_index, 
-            placeholder="Välj ditt namn..."
+            index=None, 
+            placeholder="Välj ditt namn...",
+            key=f"namn_ruta_{st.session_state.form_id}"
         )
         
         aktuell_dag_index = idag.weekday()
@@ -207,7 +217,7 @@ with flik_inloggning:
                 
                 st.success(f"✅ Ändringarna sparades permanent för {valt_namn}!")
                 
-                # Tvinga namnet att bli tomt inför nästa omladdning
-                st.session_state.valt_namn_index = None
+                # Öka räknaren vid sparande så rutan rensas direkt
+                st.session_state.form_id += 1
                 time.sleep(2.0)
                 st.rerun()
