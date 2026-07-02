@@ -143,7 +143,6 @@ if val_flik == "📺 TV-Skärm (Visa schema)":
     if os.path.exists("logga.png"):
         st.image("logga.png", width=300)
         
-    # NYTT: Texten och tillhörande ikon har gjorts mindre (0.9rem) och mer diskret
     st.markdown(f"<p style='margin:0; font-size:0.9rem; color:#666;'><span style='font-size:1rem;'>🗓️</span> Vecka {veckonummer} | Dag-för-dag status</p>", unsafe_allow_html=True)
     st.markdown("<hr style='margin-top:5px; margin-bottom:10px; border:0; border-top:1px solid #ddd;'>", unsafe_allow_html=True)
 
@@ -183,7 +182,8 @@ else:
     if os.path.exists("logga.png"):
         st.image("logga.png", width=300)
         
-    st.subheader("🔐 Logga in och ändra status")
+    # RÄTTAT: Ändrad text till enbart "Ändra status"
+    st.subheader("📝 Ändra status")
     st.write("Välj ditt namn och bocka i vilka dagar du vill uppdatera.")
     
     kol_vänster, kol_mitten, kol_höger = st.columns(3)
