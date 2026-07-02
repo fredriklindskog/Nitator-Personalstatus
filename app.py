@@ -120,26 +120,28 @@ ANSTALLDA = [
 
 initiera_databas()
 
-# NYTT: Skapa räknare i minnet för att kontrollera nollställningen
+# Skapa minnesräknare för att rensa rutan vid klick
 if "form_id" not in st.session_state:
     st.session_state.form_id = 0
-if "senaste_flik" not in st.session_state:
-    st.session_state.senaste_flik = 0
+if "sparade_just_nu" not in st.session_state:
+    st.session_state.sparade_just_nu = False
 
-# --- SEPARATA FLIKAR HÖGST UPP PÅ SIDAN ---
-# Vi lägger till en 'key' på st.tabs för att hålla koll på vilken flik som är aktiv just nu
-valt_tab_index = st.tabs(["📺 TV-Skärm (Visa schema)", "🔐 Ändra Status"])
+# NYTT: Snygg och stabil meny högst upp på sidan istället för krångliga tabs
+valda_flikar = ["📺 TV-Skärm (Visa schema)", "🔐 Ändra Status"]
+val_flik = st.segmented_control(
+    "Välj vy:",
+    valda_flikar,
+    default="📺 TV-Skärm (Visa schema)",
+    label_visibility="collapsed"
+)
 
 # ==========================================
-# FLIK 1: TV-SKÄRMEN
+# VY 1: TV-SKÄRMEN
 # ==========================================
-with valt_tab_index[0]:
-    # NYTT: Om man klickar på TV-fliken, ändra räknaren så att inloggningen rensas till nästa gång
-    if st.session_state.senaste_flik != 0:
-        st.session_state.form_id += 1
-        st.session_state.senaste_flik = 0
-        st.rerun()
-
+if val_flik == "📺 TV-Skärm (Visa schema)":
+    # Om vi går hit rensar vi namnrutan inför nästa besök på ändra-sidan
+    st.session_state.sparade_just_nu = True
+    
     if os.path.exists("logga.png"):
         st.image("logga.png", width=300)
         
@@ -172,29 +174,30 @@ with valt_tab_index[0]:
     st.markdown(html_kod, unsafe_allow_html=True)
 
 # ==========================================
-# FLIK 2: ÄNDRA STATUS
+# VY 2: ÄNDRA STATUS
 # ==========================================
-with valt_tab_index[1]:
-    # Kom ihåg att vi har besökt ändra-fliken
-    st.session_state.senaste_flik = 1
+else:
+    # Om vi precis klev in på denna sida, öka ID-numret en gång så rutan blir helt tom vid start
+    if st.session_state.sparade_just_nu:
+        st.session_state.form_id += 1
+        st.session_state.sparade_just_nu = False
 
     if os.path.exists("logga.png"):
         st.image("logga.png", width=300)
         
     st.subheader("🔐 Logga in och ändra status")
-    st.write("Välj ditt namn och fyll i ditt personliga lösenord.")
+    st.write("Välj ditt namn och bocka i vilka dagar du vill uppdatera.")
     
     kol_vänster, kol_mitten, kol_höger = st.columns(3)
     
     with kol_mitten:
-        # NYTT: key=f"namn_ruta_{st.session_state.form_id}" gör att rutan tvingas bli tom ("Välj ditt namn...") 
-        # så fort form_id-räknaren har tickat upp i bakgrunden när man lämnade fliken.
+        # Denna rullista är nu 100% stabil medan du använder den!
         valt_namn = st.selectbox(
             "Välj ditt namn i listan:", 
             ANSTALLDA, 
             index=None, 
             placeholder="Välj ditt namn...",
-            key=f"namn_ruta_{st.session_state.form_id}"
+            key=f"namn_box_{st.session_state.form_id}"
         )
         
         aktuell_dag_index = idag.weekday()
@@ -217,7 +220,9 @@ with valt_tab_index[1]:
                 
                 st.success(f"✅ Ändringarna sparades permanent för {valt_namn}!")
                 
-                # Öka räknaren vid sparande så rutan rensas direkt
+                # Nollställ rutan till nästa gång
                 st.session_state.form_id += 1
+                st.session_state.sparade_just_nu = True
+                
                 time.sleep(2.0)
                 st.rerun()
