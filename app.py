@@ -2,19 +2,21 @@ import streamlit as st
 import hashlib
 import datetime
 import sqlite3
+import os
 
 # 1. Inställningar för hemsidan (Bred layout för TV-skärm)
 st.set_page_config(page_title="Veckostatus Personal", layout="wide")
+
+# NYTT: Lägg till logga högst upp på sidan om filen "logga.png" finns i mappen
+if os.path.exists("logga.png"):
+    st.logo("logga.png", icon_image="logga.png")
 
 # 2. Funktioner för att hantera SQL-databasen
 DB_FIL = "status.db"
 
 def initiera_databas():
-    """Skapar databastabellen och lägger till de anställda om de inte finns."""
     conn = sqlite3.connect(DB_FIL)
     cursor = conn.cursor()
-    
-    # Skapa tabell för att lagra status och kommentar för varje person och dag
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS veckostatus (
             namn TEXT,
@@ -24,8 +26,6 @@ def initiera_databas():
             PRIMARY KEY (namn, dag)
         )
     ''')
-    
-    # Kontrollera om vi behöver lägga till standardvärden ("På jobb")
     cursor.execute("SELECT COUNT(*) FROM veckostatus")
     if cursor.fetchone()[0] == 0:
         for namn in ANSTALLDA:
@@ -38,7 +38,6 @@ def initiera_databas():
     conn.close()
 
 def hämta_alla_statusar():
-    """Hämtar all data från databasen och bygger om till ett smidigt Python-lexikon."""
     conn = sqlite3.connect(DB_FIL)
     cursor = conn.cursor()
     cursor.execute("SELECT namn, dag, status, kommentar FROM veckostatus")
@@ -52,7 +51,6 @@ def hämta_alla_statusar():
     return data
 
 def uppdatera_status_i_db(namn, dag, ny_status, ny_kommentar):
-    """Uppdaterar eller sätter in en specifik status och kommentar i databasen."""
     conn = sqlite3.connect(DB_FIL)
     cursor = conn.cursor()
     cursor.execute('''
@@ -66,7 +64,7 @@ def uppdatera_status_i_db(namn, dag, ny_status, ny_kommentar):
 # 3. Kalkylera datum och vecka
 idag = datetime.date.today()
 iso_info = idag.isocalendar()
-veckonummer = iso_info[1]  # Hämtar det exakta veckonumret
+veckonummer = iso_info[1]
 
 mandag = idag - datetime.timedelta(days=idag.weekday())
 VECKODAGAR = ["Måndag", "Tisdag", "Onsdag", "Torsdag", "Fredag"]
@@ -99,7 +97,7 @@ ANSTALLDA_MED_LOSENORD = {
 # Skapa en ren lista med bara namnen för rullistan
 ANSTALLDA = list(ANSTALLDA_MED_LOSENORD.keys())
 
-# Starta och bygg databasen om det behövs
+# Starta databasen
 initiera_databas()
 
 # --- SEPARATA FLIKAR HÖGST UPP PÅ SIDAN ---
@@ -113,7 +111,6 @@ with flik_tv:
     st.subheader(f"🗓️ Vecka {veckonummer} | Dag-för-dag status")
     st.markdown("---")
 
-    # Hämta dagsfärsk data direkt från SQL-databasen
     aktuell_data = hämta_alla_statusar()
 
     # Skapa 6 kolumner för rubriker
@@ -126,7 +123,6 @@ with flik_tv:
 
     st.markdown("---")
 
-    # Visa rader för anställda
     for namn in ANSTALLDA:
         rad_kolumner = st.columns(6)
         with rad_kolumner[0]:
@@ -156,7 +152,7 @@ with flik_inloggning:
         valt_namn = st.selectbox("Välj ditt namn i listan:", ANSTALLDA)
         
         aktuell_dag_index = idag.weekday()
-        default_dag = [VECKODAGAR[aktuell_dag_index]] if aktuell_dag_index < 5 else [VECKODAGAR[0]]
+        default_dag = [VECKODAGAR[aktuell_dag_index]] if aktuell_dag_index < 5 else [VECKODAGAR]
         valda_dagar = st.multiselect("Vilka dagar vill du ändra?", VECKODAGAR, default=default_dag)
         
         ny_status = st.radio("Välj din status för dessa dagar:", list(STATUS_VAL.keys()), horizontal=True)
@@ -171,7 +167,6 @@ with flik_inloggning:
                 if not valda_dagar:
                     st.error("Du måste välja minst en dag!")
                 else:
-                    # Spara ändringarna direkt i SQL-databasen för varje vald dag
                     for dag in valda_dagar:
                         uppdatera_status_i_db(valt_namn, dag, ny_status, ny_kommentar)
                     
