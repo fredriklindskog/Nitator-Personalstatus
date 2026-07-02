@@ -7,7 +7,7 @@ import os
 # 1. Inställningar för hemsidan (Bred layout för TV-skärm)
 st.set_page_config(page_title="Veckostatus Personal", layout="wide")
 
-# NYTT: Säker CSS-kod för att skugga varannan rad perfekt utan layoutfel
+# Säker CSS-kod för att skugga varannan rad perfekt utan layoutfel
 st.html("""
 <style>
     /* Färga bakgrunden på varannan container-rad */
@@ -38,7 +38,7 @@ def initiera_databas():
         )
     ''')
     cursor.execute("SELECT COUNT(*) FROM veckostatus")
-    if cursor.fetchone() == 0:
+    if cursor.fetchone()[0] == 0:
         for namn in ANSTALLDA:
             for dag in VECKODAGAR:
                 cursor.execute(
@@ -74,8 +74,8 @@ def uppdatera_status_i_db(namn, dag, ny_status, ny_kommentar):
 
 # 3. Kalkylera datum och vecka
 idag = datetime.date.today()
-iso_info = idag.isocalendar()
-veckonummer = iso_info[1]
+iso_info = idag.isocalendar()[1]
+veckonummer = iso_info
 
 mandag = idag - datetime.timedelta(days=idag.weekday())
 VECKODAGAR = ["Måndag", "Tisdag", "Onsdag", "Torsdag", "Fredag"]
@@ -126,9 +126,9 @@ with flik_tv:
 
     aktuell_data = hämta_alla_statusar()
 
-    # Rubrikrad
+    # RÄTTAT: Lagt till [0] för den första rubrikkolumnen
     rubrik_kolumner = st.columns(6)
-    with rubrik_kolumner:
+    with rubrik_kolumner[0]:
         st.markdown("<h4 style='margin:0;'>👤 Anställd</h4>", unsafe_allow_html=True)
     for i, dag_text in enumerate(DAG_MED_DATUM):
         with rubrik_kolumner[i+1]:
@@ -139,8 +139,9 @@ with flik_tv:
     # Gå igenom personalen och lägg varje rad i en egen säker st.container
     for namn in ANSTALLDA:
         with st.container(border=False):
+            # RÄTTAT: Lagt till [0] för personalens första kolumn
             rad_kolumner = st.columns(6)
-            with rad_kolumner:
+            with rad_kolumner[0]:
                 st.markdown(f"**{namn}**")
             
             for i, dag in enumerate(VECKODAGAR):
