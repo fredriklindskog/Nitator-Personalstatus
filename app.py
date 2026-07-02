@@ -91,8 +91,8 @@ def uppdatera_status_i_db(namn, dag, ny_status, ny_kommentar):
 
 # 3. Kalkylera datum och vecka
 idag = datetime.date.today()
-iso_info = idg_val if (idg_val := idag.isocalendar()) else idag.isocalendar()
-veckonummer = iso_info
+iso_info = idag.isocalendar()
+veckonummer = iso_info[1]
 
 mandag = idag - datetime.timedelta(days=idag.weekday())
 VECKODAGAR = ["Måndag", "Tisdag", "Onsdag", "Torsdag", "Fredag"]
@@ -112,7 +112,7 @@ STATUS_VAL = {
     "Ledig": "⚪ Ledig"
 }
 
-# Lista på anställda (Lösenordshanteringen borttagen!)
+# Lista på anställda
 ANSTALLDA = [
     "Sophie Noresson Fjellsén",
     "Fredrik Lindskog",
@@ -160,7 +160,7 @@ with flik_tv:
     st.markdown(html_kod, unsafe_allow_html=True)
 
 # ==========================================
-# FLIK 2: ÄNDRA STATUS (Inloggningsfält borttagna)
+# FLIK 2: ÄNDRA STATUS
 # ==========================================
 with flik_inloggning:
     if os.path.exists("logga.png"):
@@ -172,24 +172,25 @@ with flik_inloggning:
     kol_vänster, kol_mitten, kol_höger = st.columns(3)
     
     with kol_mitten:
-        # NYTT: index=None tvingar rullistan att vara tom ("Välj...") vid start
+        # Tvingar rullistan att vara tom ("Välj...") vid start
         valt_namn = st.selectbox("Välj ditt namn i listan:", ANSTALLDA, index=None, placeholder="Välj ditt namn...")
         
-        aktuell_dag_index = idag.weekday() if idg_val := idag.weekday() < 5 else 0
+        # RÄTTAT: Säker och enkel beräkning av aktuell dag
+        aktuell_dag_index = idag.weekday()
+        if aktuell_dag_index > 4:  # Om det är helg, förval välj måndag (index 0)
+            aktuell_dag_index = 0
+            
         valda_dagar = st.multiselect("Vilka dagar vill du ändra?", VECKODAGAR, default=[VECKODAGAR[aktuell_dag_index]])
         
         ny_status = st.radio("Välj din status för dessa dagar:", list(STATUS_VAL.keys()), horizontal=True)
         ny_kommentar = st.text_input("Lägg till en kommentar (frivilligt):", max_chars=40, placeholder="t.ex. Svarar i mobilen, Teams-möte")
         
-        # Spara-knapp utan lösenordskrav
         if st.button("Spara och uppdatera schema", type="primary"):
-            # Kontrollera att användaren faktiskt har valt ett namn
             if valt_namn is None:
                 st.error("⚠️ Du måste välja ditt namn i listan innan du kan spara!")
             elif not valda_dagar:
                 st.error("⚠️ Du måste välja minst en dag!")
             else:
-                # Spara direkt till SQL-databasen
                 for dag in valda_dagar:
                     uppdatera_status_i_db(valt_namn, dag, ny_status, ny_kommentar)
                 
