@@ -23,7 +23,7 @@ def initiera_databas():
         )
     ''')
     cursor.execute("SELECT COUNT(*) FROM veckostatus")
-    if cursor.fetchone()[0] == 0:
+    if cursor.fetchone() == 0:
         for namn in ANSTALLDA:
             for dag in VECKODAGAR:
                 cursor.execute(
@@ -59,7 +59,8 @@ def uppdatera_status_i_db(namn, dag, ny_status, ny_kommentar):
 
 # 3. Kalkylera datum och vecka
 idag = datetime.date.today()
-veckonummer = idag.isocalendar()[1]
+iso_info = idag.isocalendar()
+veckonummer = iso_info[1]  # Plockar ut bara veckonumret som ett tal (t.ex. 27)
 
 mandag = idag - datetime.timedelta(days=idag.weekday())
 VECKODAGAR = ["Måndag", "Tisdag", "Onsdag", "Torsdag", "Fredag"]
@@ -105,8 +106,7 @@ with flik_tv:
     if os.path.exists("logga.png"):
         st.image("logga.png", width=300)
         
-    # NYTT: Ändrad ikon (👥) och ny kortare text ("Personal")
-    st.title("👥 Personal")
+    # NYTT: Rubriken borttagen helt. Kalenderraden ligger nu direkt under loggan.
     st.subheader(f"🗓️ Vecka {veckonummer} | Dag-för-dag status")
     st.markdown("---")
 
@@ -141,14 +141,13 @@ with flik_tv:
 # FLIK 2: INLOGGNINGSSIDAN
 # ==========================================
 with flik_inloggning:
-    # NYTT: Loggan är nu lika stor här (width=300) som på TV-skärmen
     if os.path.exists("logga.png"):
         st.image("logga.png", width=300)
         
     st.title("🔐 Logga in och ändra status")
     st.write("Välj ditt namn och fyll i ditt personliga lösenord.")
     
-    kol_vänster, kol_mitten, kol_höger = st.columns([1, 2, 1])
+    kol_vänster, kol_mitten, kol_höger = st.columns([1, 2, 1]) # Centrerar rutan snyggt
     
     with kol_mitten:
         valt_namn = st.selectbox("Välj ditt namn i listan:", ANSTALLDA)
