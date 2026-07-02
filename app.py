@@ -7,17 +7,19 @@ import os
 # 1. Inställningar för hemsidan (Bred layout för TV-skärm)
 st.set_page_config(page_title="Veckostatus Personal", layout="wide")
 
-# Säker CSS-kod för att skugga varannan rad perfekt utan layoutfel
+# CSS-kod för att göra varannan personrad ljusgrå
 st.html("""
 <style>
-    /* Färga bakgrunden på varannan container-rad */
-    [data-testid="stVerticalBlockBorderWithTitle"]:nth-child(even) {
-        background-color: #f7f9fa !important;
+    /* Skugga varannan rad i personalmatrisen */
+    .person-rad-jamn {
+        background-color: #f4f6f7 !important;
+        padding: 10px 15px !important;
         border-radius: 6px;
-        padding: 8px 12px !important;
+        margin: 4px 0px;
     }
-    [data-testid="stVerticalBlockBorderWithTitle"]:nth-child(odd) {
-        padding: 8px 12px !important;
+    .person-rad-ojamn {
+        padding: 10px 15px !important;
+        margin: 4px 0px;
     }
 </style>
 """)
@@ -38,7 +40,7 @@ def initiera_databas():
         )
     ''')
     cursor.execute("SELECT COUNT(*) FROM veckostatus")
-    if cursor.fetchone()[0] == 0:
+    if cursor.fetchone() == 0:
         for namn in ANSTALLDA:
             for dag in VECKODAGAR:
                 cursor.execute(
@@ -75,7 +77,7 @@ def uppdatera_status_i_db(namn, dag, ny_status, ny_kommentar):
 # 3. Kalkylera datum och vecka
 idag = datetime.date.today()
 iso_info = idag.isocalendar()
-veckonummer = iso_info[1]
+veckonummer = iso_info
 
 mandag = idag - datetime.timedelta(days=idag.weekday())
 VECKODAGAR = ["Måndag", "Tisdag", "Onsdag", "Torsdag", "Fredag"]
@@ -127,7 +129,7 @@ with flik_tv:
     aktuell_data = hämta_alla_statusar()
 
     rubrik_kolumner = st.columns(6)
-    with rubrik_kolumner[0]:
+    with rubrik_kolumner:
         st.markdown("<h4 style='margin:0;'>👤 Anställd</h4>", unsafe_allow_html=True)
     for i, dag_text in enumerate(DAG_MED_DATUM):
         with rubrik_kolumner[i+1]:
@@ -135,10 +137,14 @@ with flik_tv:
 
     st.markdown("<hr style='margin-top:10px; margin-bottom:15px; border:0; border-top:1px solid #ddd;'>", unsafe_allow_html=True)
 
-    for namn in ANSTALLDA:
-        with st.container(border=False):
+    for index, namn in enumerate(ANSTALLDA):
+        rad_klass = "person-rad-jamn" if index % 2 == 0 else "person-rad-ojamn"
+        
+        with st.container():
+            st.markdown(f"<div class='{rad_klass}'>", unsafe_allow_html=True)
+            
             rad_kolumner = st.columns(6)
-            with rad_kolumner[0]:
+            with rad_kolumner:
                 st.markdown(f"**{namn}**")
             
             for i, dag in enumerate(VECKODAGAR):
@@ -151,6 +157,8 @@ with flik_tv:
                         st.markdown(f"{status_text}  \n*💬 {kommentar_text}*")
                     else:
                         st.write(status_text)
+                        
+            st.markdown("</div>", unsafe_allow_html=True)
 
 # ==========================================
 # FLIK 2: INLOGGNINGSSIDAN
@@ -159,10 +167,10 @@ with flik_inloggning:
     if os.path.exists("logga.png"):
         st.image("logga.png", width=300)
         
-    st.title("🔐 Logga in och ändra status")
+    # NYTT: Ändrat st.title till st.subheader för en mindre och snyggare rubrik text
+    st.subheader("🔐 Logga in och ändra status")
     st.write("Välj ditt namn och fyll i ditt personliga lösenord.")
     
-    # RÄTTAT: Lagt till siffran 3 i parentesen så Streamlit vet hur många kolumner som skapas
     kol_vänster, kol_mitten, kol_höger = st.columns(3)
     
     with kol_mitten:
