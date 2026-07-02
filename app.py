@@ -7,21 +7,37 @@ import os
 # 1. Inställningar för hemsidan (Bred layout för TV-skärm)
 st.set_page_config(page_title="Veckostatus Personal", layout="wide")
 
-# NYTT & RÄTTAT: Träffsäker CSS som skuggar varannan rad perfekt inuti Streamlits egna block
-st.html("""
+# NYTT: Stabil CSS inbäddad via st.markdown för att styla tabellen och varannan rad
+st.markdown("""
 <style>
-    /* Hitta alla personrader och ge dem lite luft */
-    [data-testid="stVerticalBlockBorderWithTitle"] {
-        padding: 6px 12px !important;
-        margin: 2px 0px !important;
-        border-radius: 6px !important;
+    .status-tabell {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 10px;
     }
-    /* Färga bakgrunden till ljusgrå på varannan rad */
-    [data-testid="stVerticalBlockBorderWithTitle"]:nth-of-type(even) {
+    .status-tabell th {
+        text-align: left;
+        padding: 8px;
+        font-size: 1.1rem;
+        border-bottom: 2px solid #ddd;
+    }
+    .status-tabell td {
+        padding: 12px 8px;
+        vertical-align: top;
+        font-size: 1rem;
+    }
+    /* Skugga varannan rad ljusgrå */
+    .status-tabell tr:nth-child(even) {
         background-color: #f4f6f7 !important;
     }
+    .kommentar-text {
+        font-style: italic;
+        color: #555;
+        font-size: 0.85rem;
+        margin-top: 2px;
+    }
 </style>
-""")
+""", unsafe_allow_html=True)
 
 # 2. Funktioner för att hantera SQL-databasen
 DB_FIL = "status.db"
@@ -75,8 +91,8 @@ def uppdatera_status_i_db(namn, dag, ny_status, ny_kommentar):
 
 # 3. Kalkylera datum och vecka
 idag = datetime.date.today()
-iso_info = idag.isocalendar()[1]
-veckonummer = iso_info
+iso_info = idag.isocalendar()
+veckonummer = iso_info[1]
 
 mandag = idag - datetime.timedelta(days=idag.weekday())
 VECKODAGAR = ["Måndag", "Tisdag", "Onsdag", "Torsdag", "Fredag"]
@@ -127,33 +143,36 @@ with flik_tv:
 
     aktuell_data = hämta_alla_statusar()
 
-    # Rubrikrad
-    rubrik_kolumner = st.columns(6)
-    with rubrik_kolumner[0]:
-        st.markdown("<h4 style='margin:0;'>👤 Anställd</h4>", unsafe_allow_html=True)
-    for i, dag_text in enumerate(DAG_MED_DATUM):
-        with rubrik_kolumner[i+1]:
-            st.markdown(f"<h4 style='margin:0;'>{dag_text}</h4>", unsafe_allow_html=True)
-
-    st.markdown("<hr style='margin-top:10px; margin-bottom:15px; border:0; border-top:1px solid #ddd;'>", unsafe_allow_html=True)
-
-    # Raderna för personalen (Nu helt rena från trasig HTML-kod)
+    # NYTT: Vi bygger hela tabellen i ren HTML för total kontroll över skuggningen
+    html_kod = "<table class='status-tabell'>"
+    
+    # 1. Bygg rubrikraden
+    html_kod += "<tr><th>👤 Anställd</th>"
+    for dag_text in DAG_MED_DATUM:
+        html_kod += f"<th>{dag_text}</th>"
+    html_kod += "</tr>"
+    
+    # 2. Bygg personalraderna
     for namn in ANSTALLDA:
-        with st.container():
-            rad_kolumner = st.columns(6)
-            with rad_kolumner[0]:
-                st.markdown(f"**{namn}**")
+        html_kod += f"<tr><td><strong>{namn}</strong></td>"
+        
+        for dag in VECKODAGAR:
+            dag_data = aktuell_data[namn][dag]
+            status_text = STATUS_VAL.get(dag_data["status"], "🟢 På jobb")
+            kommentar_text = dag_data["kommentar"]
             
-            for i, dag in enumerate(VECKODAGAR):
-                dag_data = aktuell_data[namn][dag]
-                status_text = STATUS_VAL.get(dag_data["status"], "🟢 På jobb")
-                kommentar_text = dag_data["kommentar"]
-                
-                with rad_kolumner[i+1]:
-                    if kommentar_text.strip():
-                        st.markdown(f"{status_text}  \n*💬 {kommentar_text}*")
-                    else:
-                        st.write(status_text)
+            html_kod += "<td>"
+            html_kod += f"<div>{status_text}</div>"
+            if kommentar_text.strip():
+                html_kod += f"<div class='kommentar-text'>💬 {kommentar_text}</div>"
+            html_kod += "</td>"
+            
+        html_kod += "</tr>"
+        
+    html_kod += "</table>"
+    
+    # Skriv ut hela tabellen på skärmen
+    st.markdown(html_kod, unsafe_allow_html=True)
 
 # ==========================================
 # FLIK 2: INLOGGNINGSSIDAN
@@ -163,7 +182,7 @@ with flik_inloggning:
         st.image("logga.png", width=300)
         
     st.subheader("🔐 Logga in och ändra status")
-    st.write("Välj ditt namn och fyll i ditt personliga lösenord.")
+    st.write("Välj ditt namn och fyll i ditt personaliga lösenord.")
     
     kol_vänster, kol_mitten, kol_höger = st.columns(3)
     
@@ -176,7 +195,7 @@ with flik_inloggning:
         ny_status = st.radio("Välj din status för dessa dagar:", list(STATUS_VAL.keys()), horizontal=True)
         ny_kommentar = st.text_input("Lägg till en kommentar (frivilligt):", max_chars=40, placeholder="t.ex. Svarar i mobilen, Teams-möte")
         
-        losenord_input = st.text_input("Ange ditt personliga lösenord:", type="password")
+        losenord_input = st.text_input("Ange ditt personaliga lösenord:", type="password")
         
         if st.button("Spara och uppdatera schema", type="primary"):
             ratt_hash = ANSTALLDA_MED_LOSENORD[valt_namn]
