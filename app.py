@@ -120,13 +120,12 @@ ANSTALLDA = [
 
 initiera_databas()
 
-# Skapa minnesräknare för att rensa rutan vid klick
 if "form_id" not in st.session_state:
     st.session_state.form_id = 0
 if "sparade_just_nu" not in st.session_state:
     st.session_state.sparade_just_nu = False
 
-# NYTT: Snygg och stabil meny högst upp på sidan istället för krångliga tabs
+# Meny högst upp på sidan
 valda_flikar = ["📺 TV-Skärm (Visa schema)", "🔐 Ändra Status"]
 val_flik = st.segmented_control(
     "Välj vy:",
@@ -139,13 +138,13 @@ val_flik = st.segmented_control(
 # VY 1: TV-SKÄRMEN
 # ==========================================
 if val_flik == "📺 TV-Skärm (Visa schema)":
-    # Om vi går hit rensar vi namnrutan inför nästa besök på ändra-sidan
     st.session_state.sparade_just_nu = True
     
     if os.path.exists("logga.png"):
         st.image("logga.png", width=300)
         
-    st.markdown(f"<h4 style='margin:0; font-weight:normal;'>🗓️ Vecka {veckonummer} | Dag-för-dag status</h4>", unsafe_allow_html=True)
+    # NYTT: Texten och tillhörande ikon har gjorts mindre (0.9rem) och mer diskret
+    st.markdown(f"<p style='margin:0; font-size:0.9rem; color:#666;'><span style='font-size:1rem;'>🗓️</span> Vecka {veckonummer} | Dag-för-dag status</p>", unsafe_allow_html=True)
     st.markdown("<hr style='margin-top:5px; margin-bottom:10px; border:0; border-top:1px solid #ddd;'>", unsafe_allow_html=True)
 
     aktuell_data = hämta_alla_statusar()
@@ -177,7 +176,6 @@ if val_flik == "📺 TV-Skärm (Visa schema)":
 # VY 2: ÄNDRA STATUS
 # ==========================================
 else:
-    # Om vi precis klev in på denna sida, öka ID-numret en gång så rutan blir helt tom vid start
     if st.session_state.sparade_just_nu:
         st.session_state.form_id += 1
         st.session_state.sparade_just_nu = False
@@ -191,7 +189,6 @@ else:
     kol_vänster, kol_mitten, kol_höger = st.columns(3)
     
     with kol_mitten:
-        # Denna rullista är nu 100% stabil medan du använder den!
         valt_namn = st.selectbox(
             "Välj ditt namn i listan:", 
             ANSTALLDA, 
@@ -220,7 +217,6 @@ else:
                 
                 st.success(f"✅ Ändringarna sparades permanent för {valt_namn}!")
                 
-                # Nollställ rutan till nästa gång
                 st.session_state.form_id += 1
                 st.session_state.sparade_just_nu = True
                 
