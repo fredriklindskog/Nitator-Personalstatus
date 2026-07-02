@@ -8,29 +8,17 @@ import time
 # 1. Inställningar för hemsidan (Bred layout för TV-skärm)
 st.set_page_config(page_title="Veckostatus Personal", layout="wide")
 
-# RÄTTAT: Justerad CSS som flyttar upp allt UTAN att dölja flikarna
+# CSS-kod enbart för tabellens utseende (Inga marginal-justeringar som döljer flikar)
 st.markdown("""
 <style>
-    /* Minska tomrummet längst upp på sidan */
-    .block-container {
-        padding-top: 0.5rem !important;
-        padding-bottom: 0rem !important;
-    }
-    
-    /* Justera flikarna så de ligger tight mot toppen */
-    .stTabs {
-        margin-top: 0px !important;
-    }
-    
-    /* Tabellens egna inställningar */
     .status-tabell {
         width: 100%;
         border-collapse: collapse;
-        margin-top: 10px;
+        margin-top: 15px;
     }
     .status-tabell th {
         text-align: left;
-        padding: 8px;
+        padding: 10px 8px;
         font-size: 1.1rem;
         border-bottom: 2px solid #ddd;
     }
@@ -104,7 +92,7 @@ def uppdatera_status_i_db(namn, dag, ny_status, ny_kommentar):
 # 3. Kalkylera datum och vecka
 idag = datetime.date.today()
 iso_info = idag.isocalendar()
-veckonummer = iso_info[1]
+veckonummer = iso_info
 
 mandag = idag - datetime.timedelta(days=idag.weekday())
 VECKODAGAR = ["Måndag", "Tisdag", "Onsdag", "Torsdag", "Fredag"]
