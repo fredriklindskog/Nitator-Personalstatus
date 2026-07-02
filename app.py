@@ -74,8 +74,8 @@ def uppdatera_status_i_db(namn, dag, ny_status, ny_kommentar):
 
 # 3. Kalkylera datum och vecka
 idag = datetime.date.today()
-iso_info = idag.isocalendar()[1]
-veckonummer = iso_info
+iso_info = idag.isocalendar()
+veckonummer = iso_info[1]
 
 mandag = idag - datetime.timedelta(days=idag.weekday())
 VECKODAGAR = ["Måndag", "Tisdag", "Onsdag", "Torsdag", "Fredag"]
@@ -126,7 +126,6 @@ with flik_tv:
 
     aktuell_data = hämta_alla_statusar()
 
-    # RÄTTAT: Lagt till [0] för den första rubrikkolumnen
     rubrik_kolumner = st.columns(6)
     with rubrik_kolumner[0]:
         st.markdown("<h4 style='margin:0;'>👤 Anställd</h4>", unsafe_allow_html=True)
@@ -136,10 +135,8 @@ with flik_tv:
 
     st.markdown("<hr style='margin-top:10px; margin-bottom:15px; border:0; border-top:1px solid #ddd;'>", unsafe_allow_html=True)
 
-    # Gå igenom personalen och lägg varje rad i en egen säker st.container
     for namn in ANSTALLDA:
         with st.container(border=False):
-            # RÄTTAT: Lagt till [0] för personalens första kolumn
             rad_kolumner = st.columns(6)
             with rad_kolumner[0]:
                 st.markdown(f"**{namn}**")
@@ -165,7 +162,8 @@ with flik_inloggning:
     st.title("🔐 Logga in och ändra status")
     st.write("Välj ditt namn och fyll i ditt personliga lösenord.")
     
-    kol_vänster, kol_mitten, kol_höger = st.columns()
+    # RÄTTAT: Lagt till siffran 3 i parentesen så Streamlit vet hur många kolumner som skapas
+    kol_vänster, kol_mitten, kol_höger = st.columns(3)
     
     with kol_mitten:
         valt_namn = st.selectbox("Välj ditt namn i listan:", ANSTALLDA)
