@@ -8,33 +8,43 @@ import time
 # 1. Inställningar för hemsidan (Bred layout för TV-skärm)
 st.set_page_config(page_title="Veckostatus Personal", layout="wide")
 
-# CSS-kod för tabellens utseende
+# NYTT: Justerade storlekar i CSS för att passa perfekt på en TV-skärm
 st.markdown("""
 <style>
+    /* Krymp tomrummet i toppen av skärmen ännu mer */
+    .block-container {
+        padding-top: 0.2rem !important;
+        padding-bottom: 0rem !important;
+    }
+    
     .status-tabell {
         width: 100%;
         border-collapse: collapse;
-        margin-top: 15px;
+        margin-top: 5px;
     }
+    /* Mindre text på rubrikerna */
     .status-tabell th {
         text-align: left;
-        padding: 10px 8px;
-        font-size: 1.1rem;
+        padding: 6px;
+        font-size: 0.95rem;
         border-bottom: 2px solid #ddd;
+        color: #333;
     }
+    /* Mindre text och mer kompakta rader för personalen */
     .status-tabell td {
-        padding: 12px 8px;
-        vertical-align: top;
-        font-size: 1rem;
+        padding: 6px 6px;
+        vertical-align: middle;
+        font-size: 0.9rem;
     }
     .status-tabell tr:nth-child(even) {
         background-color: #f4f6f7 !important;
     }
+    /* Extra liten text för kommentarerna */
     .kommentar-text {
         font-style: italic;
         color: #555;
-        font-size: 0.85rem;
-        margin-top: 2px;
+        font-size: 0.75rem;
+        margin-top: 1px;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -141,10 +151,10 @@ if val_flik == "📺 TV-Skärm (Visa schema)":
     st.session_state.sparade_just_nu = True
     
     if os.path.exists("logga.png"):
-        st.image("logga.png", width=300)
+        st.image("logga.png", width=250) # Minskat loggan till 250px för att spara vertikalt utrymme
         
-    st.markdown(f"<p style='margin:0; font-size:0.9rem; color:#666;'><span style='font-size:1rem;'>🗓️</span> Vecka {veckonummer} | Dag-för-dag status</p>", unsafe_allow_html=True)
-    st.markdown("<hr style='margin-top:5px; margin-bottom:10px; border:0; border-top:1px solid #ddd;'>", unsafe_allow_html=True)
+    st.markdown(f"<p style='margin:0; font-size:0.8rem; color:#666;'><span style='font-size:0.9rem;'>🗓️</span> Vecka {veckonummer} | Dag-för-dag status</p>", unsafe_allow_html=True)
+    st.markdown("<hr style='margin-top:3px; margin-bottom:5px; border:0; border-top:1px solid #ddd;'>", unsafe_allow_html=True)
 
     aktuell_data = hämta_alla_statusar()
 
@@ -180,9 +190,8 @@ else:
         st.session_state.sparade_just_nu = False
 
     if os.path.exists("logga.png"):
-        st.image("logga.png", width=300)
+        st.image("logga.png", width=250)
         
-    # RÄTTAT: Ändrad text till enbart "Ändra status"
     st.subheader("📝 Ändra status")
     st.write("Välj ditt namn och bocka i vilka dagar du vill uppdatera.")
     
